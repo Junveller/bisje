@@ -3,15 +3,15 @@
   --card: #FFFFFF;
   --line: #E6E6E1;
   --radius: 18px;
-  --accent: #4B55D6;
+  --accent: #5B64D9;
   --accent-soft: #EEF0FF;
   --accent-text: #3640B8;
   --text: #1C1C22;
   --sub: #6B6B76;
   --danger: #B3261E;
-  --progress: #5CC7A0;
-  --now-hour: #F5C84B;
-  --now-line: #E5484D;
+  --progress: #7DD3B3;
+  --now-hour: #F7D77A;
+  --now-line: #EC6A6E;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --title-h: 32px;
@@ -463,7 +463,7 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .done-head .bundle-name { flex: 1; font-size: 14px; }
 .done-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px 0 14px; border-top: 1px solid #EFEFEB; }
 .done-row:first-child { border-top: 0; }
-.done-check { flex: none; width: 20px; height: 20px; border-radius: 6px; background: #5CC7A0; color: #fff; display: flex; align-items: center; justify-content: center; }
+.done-check { flex: none; width: 20px; height: 20px; border-radius: 6px; background: #7DD3B3; color: #fff; display: flex; align-items: center; justify-content: center; }
 .done-open { border: 0; background: none; text-align: left; align-items: flex-start; }
 .done-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 6px 0; }
 .done-title { font-size: 14.5px; color: #3A3A44; overflow-wrap: anywhere; }
