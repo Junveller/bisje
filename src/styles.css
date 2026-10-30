@@ -24,7 +24,8 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
+html, body, #root { height: 100%; margin: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
+html { overflow-x: clip; }
 body { background: var(--bg); overscroll-behavior: none; overflow-x: hidden; font-size: 15px; line-height: 1.45; }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -40,10 +41,10 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .phone-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .screen-body {
-  flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-x: none; -webkit-overflow-scrolling: touch;
   padding: 8px 16px 24px; display: flex; flex-direction: column; gap: 12px;
 }
-.screen-body > * { flex-shrink: 0; }
+.screen-body > * { flex-shrink: 0; min-width: 0; max-width: 100%; }
 .screen-body.narrow { max-width: 440px; width: 100%; margin: 0 auto; padding-top: 16px; }
 
 .titlebar {

@@ -79,6 +79,13 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
     onClose();
   };
 
+  /** DONE으로 기록한 블록을 PLAN으로 돌린다 (같은 시간에 PLAN이 있으면 이 블록이 우선) */
+  const toPlan = async () => {
+    await placeBlock({ ...toBlock(), kind: 'plan' });
+    toast('PLAN으로 바꿨어요');
+    onClose();
+  };
+
   const del = async () => {
     if (d.id) await remove('blocks', d.id);
     onClose();
@@ -180,6 +187,7 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
           {editTime ? '시간 수정 닫기' : '시간 수정'}
         </button>
         {d.kind === 'plan' && <button type="button" className="btn outline" onClick={copy}>PLAN → DONE 복사</button>}
+        {d.kind === 'done' && d.id && <button type="button" className="btn outline" onClick={toPlan}>PLAN으로 바꾸기</button>}
       </div>
       {editTime && details}
       {memo}
