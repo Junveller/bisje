@@ -266,6 +266,9 @@ export function authErrorMessage(e: unknown): string {
       return `이 claude.ai 계정에는 이미 ‘${String(e.data.nickname)}’ 계정이 있어요. 로그인해 주세요.`;
     case 'session': return '로그인이 끝났어요. 다시 로그인해 주세요.';
     case 'local': return '서버에 연결된 경우에만 사용할 수 있어요';
-    default: return '문제가 생겼어요. 잠시 후 다시 시도해 주세요.';
+    default: {
+      const m = typeof e.data?.message === 'string' ? e.data.message : '';
+      return m ? `문제가 생겼어요. 잠시 후 다시 시도해 주세요. (${m})` : '문제가 생겼어요. 잠시 후 다시 시도해 주세요.';
+    }
   }
 }
