@@ -67,6 +67,14 @@ export function DateCard({ date, today, onChange, twoLine, addDays }: {
         )}
       </button>
       <IconButton icon="right" label="내일" onClick={() => onChange(addDays(date, 1))} />
+      {date !== today && (
+        <button type="button" className="date-today" onClick={() => onChange(today)} aria-label="오늘로 이동">오늘</button>
+      )}
+      <label className="icon-btn date-pick" title="날짜 고르기">
+        <Icon name="calendar" />
+        <input type="date" className="date-input" value={date} aria-label="날짜 고르기"
+          onChange={(e) => { if (e.target.value) onChange(e.target.value); }} />
+      </label>
     </div>
   );
 }
