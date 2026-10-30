@@ -38,6 +38,10 @@ export interface Todo extends Base {
   bundleId: string;
   title: string;
   done: boolean;
+  /** 기한 (yyyy-mm-dd). 없으면 기한 없음 */
+  due?: string;
+  /** 완료한 날짜 (yyyy-mm-dd, 하루는 06시 기준) */
+  doneOn?: string;
   order: number;
 }
 

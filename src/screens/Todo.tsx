@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AppTitle, Checkbox, DateCard, Field, IconButton, Sheet, isEnter } from '../components/ui';
+import { AppTitle, Checkbox, DateCard, Field, IconButton, Segmented, Sheet, isEnter } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { aggregateBundleIds, put, remove, uid } from '../lib/data';
 import { db } from '../lib/db';
@@ -10,6 +10,7 @@ import { addDays, fmtMinutes, logicalToday, nowSlot, SLOTS, wageLabel } from '..
 import type { Bundle, Category, Todo, Top3, Top3Item } from '../lib/types';
 import { BundleEdit, CategoryEdit } from './BundleEdit';
 import { BlockSheet, type BlockDraft } from './BlockSheet';
+import { CompletedList, DueChip, DueSheet, DueSummary, sortByDue } from './TodoParts';
 
 const MAX_PILLS = 12;
 
@@ -24,6 +25,7 @@ export function TodoScreen({ embedded }: { embedded?: boolean }) {
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [editTodo, setEditTodo] = useState<Todo | null>(null);
   const [draft, setDraft] = useState<BlockDraft | null>(null);
+  const [view, setView] = useState<'open' | 'done'>('open');
 
   const aggIds = useMemo(() => aggregateBundleIds(settings, bundles), [settings, bundles]);
   const aggMinutes = blocks.filter((b) => b.kind === 'done' && aggIds.has(b.bundleId)).reduce((s, b) => s + (b.end - b.start) * 10, 0);
@@ -40,7 +42,14 @@ export function TodoScreen({ embedded }: { embedded?: boolean }) {
       <div className="screen-body">
         <DateCard date={date} today={today} onChange={setDate} addDays={addDays} twoLine />
 
-        {settings.sections.summary && (
+        <Segmented label="진행 중 / 완료 모음" value={view} onChange={setView}
+          options={[{ value: 'open', label: '진행 중' }, { value: 'done', label: `완료 모음 ${doneCount}` }]} />
+
+        {view === 'done' && <CompletedList todos={todos} bundles={bundles} categories={categories} today={today} />}
+
+        {view === 'open' && <DueSummary todos={todos} today={today} />}
+
+        {view === 'open' && settings.sections.summary && (
           <div className="summary-row">
             <section className="card stat" aria-label="집계시간">
               <span className="muted small">집계시간</span>
@@ -64,12 +73,12 @@ export function TodoScreen({ embedded }: { embedded?: boolean }) {
           </div>
         )}
 
-        {settings.sections.top3 && <Top3Card date={date} />}
-        {settings.sections.dailyReview && <ComingSoon title="Daily Review" />}
-        {settings.sections.dday && <ComingSoon title="D-Day" />}
-        {settings.sections.goal && <ComingSoon title="Goal" />}
+        {view === 'open' && settings.sections.top3 && <Top3Card date={date} />}
+        {view === 'open' && settings.sections.dailyReview && <ComingSoon title="Daily Review" />}
+        {view === 'open' && settings.sections.dday && <ComingSoon title="D-Day" />}
+        {view === 'open' && settings.sections.goal && <ComingSoon title="Goal" />}
 
-        {categories.map((c) => {
+        {view === 'open' && categories.map((c) => {
           const bs = bundles.filter((b) => b.categoryId === c.id);
           const inAgg = settings.aggregate.categoryIds.includes(c.id) || bs.some((b) => settings.aggregate.bundleIds.includes(b.id));
           return (
@@ -82,21 +91,21 @@ export function TodoScreen({ embedded }: { embedded?: boolean }) {
                 <IconButton icon="pencil" className="faint" label={`${c.name} 카테고리 편집`} onClick={() => setEditCat(c)} />
               </div>
               {bs.map((b) => (
-                <BundleCard key={b.id} bundle={b} todos={todos.filter((t) => t.bundleId === b.id)}
+                <BundleCard key={b.id} bundle={b} today={today} todos={todos.filter((t) => t.bundleId === b.id)}
                   onEdit={() => setEditBundle({ bundle: b })} onSchedule={addToTimetable} onEditTodo={setEditTodo} />
               ))}
             </section>
           );
         })}
 
-        <button type="button" className="btn dashed wide" onClick={() => setEditBundle({})}>
+        {view === 'open' && <button type="button" className="btn dashed wide" onClick={() => setEditBundle({})}>
           <Icon name="plus" size={16} /> 묶음 · 카테고리 추가
-        </button>
+        </button>}
       </div>
 
       <BundleEdit open={!!editBundle} bundle={editBundle?.bundle} onClose={() => setEditBundle(null)} />
       <CategoryEdit category={editCat} onClose={() => setEditCat(null)} />
-      <TodoEdit todo={editTodo} onClose={() => setEditTodo(null)} />
+      <TodoEdit todo={editTodo} today={today} onClose={() => setEditTodo(null)} />
       <BlockSheet draft={draft} onClose={() => setDraft(null)} />
     </div>
   );
@@ -142,18 +151,22 @@ function Top3Card({ date }: { date: string }) {
   );
 }
 
-function BundleCard({ bundle, todos, onEdit, onSchedule, onEditTodo }: {
-  bundle: Bundle; todos: Todo[]; onEdit: () => void; onSchedule: (t: Todo) => void; onEditTodo: (t: Todo) => void;
+function BundleCard({ bundle, today, todos, onEdit, onSchedule, onEditTodo }: {
+  bundle: Bundle; today: string; todos: Todo[]; onEdit: () => void; onSchedule: (t: Todo) => void; onEditTodo: (t: Todo) => void;
 }) {
   const [text, setText] = useState('');
+  const [pendingDue, setPendingDue] = useState<string | undefined>();
+  const [dueOpen, setDueOpen] = useState(false);
+  const openTodos = sortByDue(todos.filter((t) => !t.done));
   const col = colorOf(bundle.color);
   const add = async () => {
     const title = text.trim();
     if (!title) return;
     setText(''); // Enter 직후 blur가 와도 두 번 추가되지 않게 먼저 비운다
     await put<Todo>('todos', {
-      id: uid(), bundleId: bundle.id, title, done: false, order: todos.reduce((m, t) => Math.max(m, t.order + 1), 0),
+      id: uid(), bundleId: bundle.id, title, done: false, due: pendingDue, order: todos.reduce((m, t) => Math.max(m, t.order + 1), 0),
     });
+    setPendingDue(undefined);
   };
   return (
     <div className="bundle-card">
@@ -161,33 +174,41 @@ function BundleCard({ bundle, todos, onEdit, onSchedule, onEditTodo }: {
         <span className="dot md" style={{ background: col.strong }} />
         <span className="bundle-name">{bundle.name}</span>
         <span className="muted small">
-          {bundle.income ? wageLabel(bundle) : `${todos.filter((t) => t.done).length}/${todos.length}`}
+          {bundle.income ? wageLabel(bundle) : `${openTodos.length}개 남음`}
         </span>
       </button>
       <ul className="todo-list">
-        {todos.map((t) => (
-          <li key={t.id} className={'todo' + (t.done ? ' done' : '')}>
-            <Checkbox checked={t.done} label={t.title} onChange={(done) => put<Todo>('todos', { ...t, done })} />
+        {openTodos.map((t) => (
+          <li key={t.id} className="todo">
+            <Checkbox checked={false} label={t.title} onChange={() => put<Todo>('todos', { ...t, done: true, doneOn: today })} />
             <button type="button" className="todo-title" onClick={() => onEditTodo(t)}>{t.title}</button>
-            {t.done ? <span className="todo-gap" /> : (
-              <IconButton icon="clock" className="accent-text" label={`${t.title} 시간표에 추가`} onClick={() => onSchedule(t)} />
-            )}
+            {t.due && <DueChip due={t.due} today={today} />}
+            <IconButton icon="clock" className="accent-text" label={`${t.title} 시간표에 추가`} onClick={() => onSchedule(t)} />
           </li>
         ))}
         <li className="todo add">
           <span className="todo-plus"><Icon name="plus" size={16} /></span>
           <input className="input bare" value={text} placeholder="할 일 추가" aria-label={`${bundle.name}에 할 일 추가`}
-            onChange={(e) => setText(e.target.value)} onKeyDown={(e) => isEnter(e) && add()} onBlur={add} />
+            onChange={(e) => setText(e.target.value)} onKeyDown={(e) => isEnter(e) && add()}
+            onBlur={(e) => { if (!(e.relatedTarget as HTMLElement | null)?.dataset?.dueBtn) add(); }} />
+          <button type="button" data-due-btn="1" className={'due-add' + (pendingDue ? ' on' : '')} aria-label="기한 정하기"
+            onClick={() => setDueOpen(true)}>
+            <Icon name="calendar" size={16} />{pendingDue ? <DueChip due={pendingDue} today={today} /> : '기한'}
+          </button>
         </li>
       </ul>
+      <DueSheet key={String(dueOpen)} open={dueOpen} value={pendingDue} today={today} title={text.trim() ? `‘${text.trim()}’의 기한` : undefined}
+        onClose={() => setDueOpen(false)} onPick={setPendingDue} />
     </div>
   );
 }
 
 /** 할 일 이름 바꾸기 · 삭제 */
-function TodoEdit({ todo, onClose }: { todo: Todo | null; onClose: () => void }) {
+function TodoEdit({ todo, today, onClose }: { todo: Todo | null; today: string; onClose: () => void }) {
   const [title, setTitle] = useState('');
-  useEffect(() => setTitle(todo?.title ?? ''), [todo]);
+  const [due, setDue] = useState<string | undefined>();
+  const [dueOpen, setDueOpen] = useState(false);
+  useEffect(() => { setTitle(todo?.title ?? ''); setDue(todo?.due); }, [todo]);
   if (!todo) return null;
   return (
     <Sheet open onClose={onClose} title="할 일"
@@ -195,12 +216,19 @@ function TodoEdit({ todo, onClose }: { todo: Todo | null; onClose: () => void })
         <>
           <button type="button" className="btn outline danger big del-btn" onClick={async () => { await remove('todos', todo.id); onClose(); }}>삭제</button>
           <button type="button" className="btn primary big grow" disabled={!title.trim()}
-            onClick={async () => { await put<Todo>('todos', { ...todo, title: title.trim() }); onClose(); }}>저장</button>
+            onClick={async () => { await put<Todo>('todos', { ...todo, title: title.trim(), due }); onClose(); }}>저장</button>
         </>
       }>
       <Field label="이름">
         <input className="input" value={title} maxLength={60} autoFocus onChange={(e) => setTitle(e.target.value)} />
       </Field>
+      <Field label="기한">
+        <button type="button" className="btn outline due-edit" onClick={() => setDueOpen(true)}>
+          <Icon name="calendar" size={16} />
+          {due ? <><DueChip due={due} today={today} /></> : '기한 없음'}
+        </button>
+      </Field>
+      <DueSheet key={String(dueOpen)} open={dueOpen} value={due} today={today} onClose={() => setDueOpen(false)} onPick={setDue} />
     </Sheet>
   );
 }
