@@ -42,6 +42,8 @@ export interface Todo extends Base {
   due?: string;
   /** 완료한 날짜 (yyyy-mm-dd, 하루는 06시 기준) */
   doneOn?: string;
+  /** 메모 */
+  memo?: string;
   order: number;
 }
 

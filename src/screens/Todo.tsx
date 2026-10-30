@@ -182,6 +182,7 @@ function BundleCard({ bundle, today, todos, onEdit, onSchedule, onEditTodo }: {
           <li key={t.id} className="todo">
             <Checkbox checked={false} label={t.title} onChange={() => put<Todo>('todos', { ...t, done: true, doneOn: today })} />
             <button type="button" className="todo-title" onClick={() => onEditTodo(t)}>{t.title}</button>
+            {t.memo && <span className="todo-memo" role="img" aria-label="메모 있음"><Icon name="memo" size={14} /></span>}
             {t.due && <DueChip due={t.due} today={today} />}
             <IconButton icon="clock" className="accent-text" label={`${t.title} 시간표에 추가`} onClick={() => onSchedule(t)} />
           </li>
@@ -207,8 +208,9 @@ function BundleCard({ bundle, today, todos, onEdit, onSchedule, onEditTodo }: {
 function TodoEdit({ todo, today, onClose }: { todo: Todo | null; today: string; onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [due, setDue] = useState<string | undefined>();
+  const [memo, setMemo] = useState('');
   const [dueOpen, setDueOpen] = useState(false);
-  useEffect(() => { setTitle(todo?.title ?? ''); setDue(todo?.due); }, [todo]);
+  useEffect(() => { setTitle(todo?.title ?? ''); setDue(todo?.due); setMemo(todo?.memo ?? ''); }, [todo]);
   if (!todo) return null;
   return (
     <Sheet open onClose={onClose} title="할 일"
@@ -216,7 +218,7 @@ function TodoEdit({ todo, today, onClose }: { todo: Todo | null; today: string; 
         <>
           <button type="button" className="btn outline danger big del-btn" onClick={async () => { await remove('todos', todo.id); onClose(); }}>삭제</button>
           <button type="button" className="btn primary big grow" disabled={!title.trim()}
-            onClick={async () => { await put<Todo>('todos', { ...todo, title: title.trim(), due }); onClose(); }}>저장</button>
+            onClick={async () => { await put<Todo>('todos', { ...todo, title: title.trim(), due, memo: memo.trim() || undefined }); onClose(); }}>저장</button>
         </>
       }>
       <Field label="이름">
@@ -227,6 +229,9 @@ function TodoEdit({ todo, today, onClose }: { todo: Todo | null; today: string; 
           <Icon name="calendar" size={16} />
           {due ? <><DueChip due={due} today={today} /></> : '기한 없음'}
         </button>
+      </Field>
+      <Field label="메모">
+        <textarea className="input textarea" rows={4} value={memo} placeholder="이 할 일에 대한 메모" onChange={(e) => setMemo(e.target.value)} />
       </Field>
       <DueSheet key={String(dueOpen)} open={dueOpen} value={due} today={today} onClose={() => setDueOpen(false)} onPick={setDue} />
     </Sheet>
