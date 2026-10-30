@@ -1,7 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// 주소 뒤에 /rest/v1/ 같은 경로가 붙어 있어도 프로젝트 주소(https://xxxx.supabase.co)만 쓴다
+function cleanUrl(u: string | undefined): string | undefined {
+  const t = (u ?? '').trim();
+  if (!t) return undefined;
+  try { return new URL(t).origin; } catch { return t; }
+}
+const url = cleanUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined);
+const key = ((import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '').trim() || undefined;
 
 /**
  * 서버가 설정되지 않으면 null → 로컬 모드.
