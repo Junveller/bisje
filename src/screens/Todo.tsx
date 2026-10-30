@@ -6,7 +6,7 @@ import { aggregateBundleIds, put, remove, uid } from '../lib/data';
 import { db } from '../lib/db';
 import { useApp, useBlocksOn, useBundles, useCategories, useNow, useTodos } from '../lib/hooks';
 import { colorOf } from '../lib/colors';
-import { addDays, fmtMinutes, logicalToday, nowSlot, SLOTS } from '../lib/time';
+import { addDays, fmtMinutes, logicalToday, nowSlot, SLOTS, wageLabel } from '../lib/time';
 import type { Bundle, Category, Todo, Top3, Top3Item } from '../lib/types';
 import { BundleEdit, CategoryEdit } from './BundleEdit';
 import { BlockSheet, type BlockDraft } from './BlockSheet';
@@ -161,7 +161,7 @@ function BundleCard({ bundle, todos, onEdit, onSchedule, onEditTodo }: {
         <span className="dot md" style={{ background: col.strong }} />
         <span className="bundle-name">{bundle.name}</span>
         <span className="muted small">
-          {bundle.income ? `시급 ${bundle.wage.toLocaleString('ko-KR')}원` : `${todos.filter((t) => t.done).length}/${todos.length}`}
+          {bundle.income ? wageLabel(bundle) : `${todos.filter((t) => t.done).length}/${todos.length}`}
         </span>
       </button>
       <ul className="todo-list">

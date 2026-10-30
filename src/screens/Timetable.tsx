@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon';
 import { aggregateBundleIds, copyPlanToDone, saveSettings } from '../lib/data';
 import { useApp, useBlocksOn, useBundles, useCategories, useLocalPref, useNow } from '../lib/hooks';
 import { colorOf } from '../lib/colors';
-import { addDays, fmtDateLong, fmtMinutes, hourOfRow, logicalToday, nowSlot, SLOTS, slotLabel, won } from '../lib/time';
+import { addDays, fmtDateLong, fmtMinutes, hourOfRow, logicalToday, nowSlot, SLOTS, slotLabel, won, earnings } from '../lib/time';
 import type { Block, BlockKind } from '../lib/types';
 import { BlockSheet, type BlockDraft } from './BlockSheet';
 
@@ -203,12 +203,12 @@ export function TimetableScreen({ embedded }: { embedded?: boolean }) {
       return (
         <div key={p.key} className={'tt-block ' + b.kind + (isGhost ? ' ghost' : '') + (tall ? ' tall' : '')}
           data-block={isGhost ? undefined : b.id} aria-hidden="true"
-          style={{ ...rect(p), ['--c' as string]: c.strong, ['--cl' as string]: c.light, ['--ink' as string]: c.ink }}>
+          style={{ ...rect(p), ['--c' as string]: c.strong, ['--cl' as string]: c.light, ['--cd' as string]: c.dark, ['--ink' as string]: c.ink }}>
           {showLabel && (
             tall ? (
               <>
                 <span className="tt-title">{b.title || bundle?.name}{b.memo && <MemoIcon />}</span>
-                <span className="tt-time">{range} · {fmtMinutes(mins)}{bundle?.income ? ` · ${won((mins / 60) * bundle.wage)}` : ''}</span>
+                <span className="tt-time">{range} · {fmtMinutes(mins)}{bundle?.income ? ` · ${won(earnings(mins, bundle))}` : ''}</span>
               </>
             ) : (
               <>

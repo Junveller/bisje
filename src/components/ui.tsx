@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { useApp } from '../lib/hooks';
-import { COLOR_KEYS, COLORS } from '../lib/colors';
+import { COLOR_KEYS, COLORS, isCustomColor } from '../lib/colors';
 import type { ColorKey } from '../lib/types';
 
 /** Enter 키 (한글 조합 중인 Enter는 무시: 마지막 글자가 아직 확정되지 않았다) */
@@ -137,6 +137,7 @@ export function Sheet({ open, onClose, title, children, footer, tall, heading, p
 }
 
 export function ColorPicker({ value, onChange }: { value: ColorKey; onChange: (c: ColorKey) => void }) {
+  const custom = isCustomColor(value);
   return (
     <div className="color-picker" role="radiogroup" aria-label="색상">
       {COLOR_KEYS.map((k) => (
@@ -146,6 +147,12 @@ export function ColorPicker({ value, onChange }: { value: ColorKey; onChange: (c
           {value === k && <Icon name="check" size={16} stroke={3} />}
         </button>
       ))}
+      <label className={'color-dot custom' + (custom ? ' on' : '')} aria-label="색 직접 고르기"
+        style={custom ? { background: value } : undefined}>
+        {custom ? <Icon name="check" size={16} stroke={3} /> : <Icon name="plus" size={18} />}
+        <input type="color" className="color-input" value={custom ? value : '#4B55D6'}
+          aria-label="색 직접 고르기" onChange={(e) => onChange(e.target.value as ColorKey)} />
+      </label>
     </div>
   );
 }

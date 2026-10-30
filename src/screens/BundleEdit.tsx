@@ -58,7 +58,8 @@ export function BundleEdit({ open, bundle, onClose }: { open: boolean; bundle?: 
     const payday = clampDay(b.payday);
     await put<Bundle>('bundles', {
       ...b, categoryId, order, name: b.name.trim(),
-      wage: Math.max(0, Math.round(b.wage || 0)), payday, settleStart,
+      wage: Math.max(0, Math.round(b.wage || 0)),
+      wageMinutes: Math.min(1440, Math.max(1, Math.round(b.wageMinutes || 60))), payday, settleStart,
     });
     onClose();
   };
@@ -128,6 +129,12 @@ export function BundleEdit({ open, bundle, onClose }: { open: boolean; bundle?: 
                   onChange={(e) => set({ wage: Number(e.target.value.replace(/\D/g, '')) })} />원
               </span>
             </Row>
+            <Row label="시급 기준 시간" sub="예: 60분(1시간), 100분">
+              <span className="input-suffix">
+                <input className="input num" inputMode="numeric" value={String(b.wageMinutes ?? 60)} aria-label="시급 기준 시간 (분)"
+                  onChange={(e) => set({ wageMinutes: Number(e.target.value.replace(/\D/g, '').slice(0, 4)) })} />분
+              </span>
+            </Row>
             <Row label="정산기간" sub={periodLabel(settleStart)}>
               <select className="input select" value={settleStart} aria-label="정산기간 시작일"
                 onChange={(e) => set({ settleStart: Number(e.target.value) })}>
@@ -143,7 +150,7 @@ export function BundleEdit({ open, bundle, onClose }: { open: boolean; bundle?: 
               </select>
             </Row>
             <p className="muted small row-note">
-              지금 정산 기간은 {shortDate(ps)} ~ {shortDate(pe)}이에요. 이 기간에 DONE으로 기록한 시간 × 시급으로 계산해요.
+              지금 정산 기간은 {shortDate(ps)} ~ {shortDate(pe)}이에요. 이 기간에 DONE으로 기록한 시간을 시급 기준 시간({b.wageMinutes || 60}분)당 {b.wage.toLocaleString('ko-KR')}원으로 계산해요.
             </p>
           </>
         )}

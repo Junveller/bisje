@@ -4,6 +4,7 @@ import { useBlocksBetween, useBundles, useCategories, useToday } from '../lib/ho
 import { colorOf } from '../lib/colors';
 import {
   addDays, fmtMinutes, monthRange, nextPayday, parseYmd, settlementRange, weekday, weekRange, won,
+  earnings, wageLabel,
 } from '../lib/time';
 import type { Block, Bundle } from '../lib/types';
 import { LAST_DAY } from './BundleEdit';
@@ -72,7 +73,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
       doneMin += dm;
       planMin += d < today ? dm : Math.max(dm, pm);
     }
-    return { b, s, e, doneMin, planMin, earned: (doneMin / 60) * b.wage, pay: nextPayday(today, b.payday) };
+    return { b, s, e, doneMin, planMin, earned: earnings(doneMin, b), pay: nextPayday(today, b.payday) };
   });
   const earnedTotal = jobs.reduce((s, j) => s + j.earned, 0);
   const planMax = Math.max(1, ...jobs.map((j) => j.planMin));
@@ -108,7 +109,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
                   <div className="job-head">
                     <span className="dot md" style={{ background: c.strong }} />
                     <strong>{j.b.name}</strong>
-                    <span className="muted xsmall">시급 {j.b.wage.toLocaleString('ko-KR')}원</span>
+                    <span className="muted xsmall">{wageLabel(j.b)}</span>
                     <span className="spacer" />
                     <strong className="job-amount">{won(j.earned)}</strong>
                   </div>

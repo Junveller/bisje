@@ -1,4 +1,6 @@
-export type ColorKey = 'yellow' | 'blue' | 'green' | 'orange' | 'purple' | 'pink' | 'gray';
+export type PresetColor = 'yellow' | 'blue' | 'green' | 'orange' | 'purple' | 'pink' | 'gray';
+/** 기본 색 이름, 또는 직접 고른 색 (#RRGGBB) */
+export type ColorKey = PresetColor | `#${string}`;
 
 export interface Base {
   id: string;
@@ -24,6 +26,8 @@ export interface Bundle extends Base {
   income: boolean;
   /** 시급 (원) */
   wage: number;
+  /** 시급이 몇 분 기준인지 (기본 60분. 100분 등 직접 지정). 없으면 60 */
+  wageMinutes?: number;
   /** 월급날: 매달 N일 */
   payday: number;
   /** 정산기간 시작일: 매달 N일 ~ 다음 달 N-1일 */

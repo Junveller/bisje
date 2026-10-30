@@ -216,6 +216,8 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
 .color-dot { width: 40px; height: 40px; border-radius: 50%; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; color: #2A2A30; }
 .color-dot.on { border-color: #2A2A30; }
+.color-dot.custom { position: relative; cursor: pointer; background: conic-gradient(#EFA9C4, #F2DC7A, #7ACB98, #9DD0EA, #B9A8EA, #EFA9C4); }
+.color-dot.custom .color-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
 
 .progress { height: 6px; border-radius: 999px; background: #EDEDE8; overflow: hidden; margin-top: 4px; }
 .progress span { display: block; height: 100%; background: var(--progress); border-radius: 999px; transition: width .2s; }
@@ -336,8 +338,10 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 }
 .tt-block {
   position: absolute; box-sizing: border-box; border-radius: 5px; overflow: hidden; display: flex; align-items: center; gap: 6px;
-  padding: 0 6px; white-space: nowrap; color: var(--ink); background: var(--cl); line-height: 1.2;
+  padding: 0 6px; white-space: nowrap; color: var(--ink); line-height: 1.2;
 }
+/* PLAN: 색 테두리만, DONE: 색을 채움 (하루를 어떻게 보냈는지 한눈에) */
+.tt-block.plan { background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 2px var(--cd, var(--c)); }
 .tt-block.done { background: var(--c); }
 .tt-block.tall { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; padding: 5px 8px; white-space: normal; }
 .tt-block.ghost { pointer-events: none; background: transparent; box-shadow: inset 0 0 0 1px var(--c); opacity: .5; }

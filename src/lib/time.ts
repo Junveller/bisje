@@ -123,3 +123,14 @@ export function nextPayday(today: string, day: number): { date: string; dday: nu
 }
 
 export const won = (n: number) => '₩' + Math.round(n).toLocaleString('ko-KR');
+
+/** 시급 기준 시간(분). 기본 60분 */
+export const wageUnit = (b: { wageMinutes?: number }) => {
+  const m = Math.round(b.wageMinutes ?? 60);
+  return m >= 1 && m <= 1440 ? m : 60;
+};
+/** 일한 시간(분)에 대한 수입 */
+export const earnings = (mins: number, b: { wage: number; wageMinutes?: number }) => (mins / wageUnit(b)) * b.wage;
+/** "시급 10,030원" 또는 "100분 10,000원" */
+export const wageLabel = (b: { wage: number; wageMinutes?: number }) =>
+  wageUnit(b) === 60 ? `시급 ${b.wage.toLocaleString('ko-KR')}원` : `${wageUnit(b)}분 ${b.wage.toLocaleString('ko-KR')}원`;
