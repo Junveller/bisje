@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { useApp } from '../lib/hooks';
 import { COLOR_KEYS, COLORS, isCustomColor } from '../lib/colors';
@@ -104,6 +104,22 @@ export function Sheet({ open, onClose, title, children, footer, tall, heading, p
   /** 바깥을 눌러 닫기: 누르기 시작한 곳도 바깥이어야 한다 (탭으로 연 직후의 click 무시) */
   const downOutside = useRef(false);
   closeRef.current = onClose;
+  /** 키보드가 올라오면 보이는 영역(visualViewport)에 맞춰 시트를 키보드 위로 올린다 */
+  const [vv, setVv] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const v = window.visualViewport;
+    if (!v) return;
+    const upd = () => {
+      const kb = window.innerHeight - v.height - v.offsetTop > 80 || v.offsetTop > 0 || window.innerHeight - v.height > 80;
+      setVv(kb ? { top: v.offsetTop, height: v.height } : null);
+      if (kb) (document.activeElement as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
+    };
+    upd();
+    v.addEventListener('resize', upd);
+    v.addEventListener('scroll', upd);
+    return () => { v.removeEventListener('resize', upd); v.removeEventListener('scroll', upd); };
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
@@ -117,7 +133,8 @@ export function Sheet({ open, onClose, title, children, footer, tall, heading, p
   }, [open]);
   if (!open) return null;
   return (
-    <div className="sheet-backdrop"
+    <div className={'sheet-backdrop' + (vv ? ' kb' : '')}
+      style={vv ? { top: vv.top, bottom: 'auto', height: vv.height } : undefined}
       onPointerDown={(e) => { downOutside.current = e.target === e.currentTarget; }}
       onClick={(e) => { if (e.target === e.currentTarget && downOutside.current) onClose(); downOutside.current = false; }}>
       <div className={'sheet' + (tall ? ' tall' : '') + (page ? ' page' : '')} role="dialog" aria-modal="true" aria-labelledby={id}

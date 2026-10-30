@@ -517,3 +517,8 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .two-col > * { flex: 1; min-width: 0; }
 
 .todo-memo { flex: none; color: var(--sub); display: inline-flex; align-items: center; }
+
+/* 키보드가 올라온 동안: 보이는 영역 안에서 시트가 넘치지 않게 */
+.sheet-backdrop.kb .sheet { max-height: 100%; }
+.sheet-backdrop.kb .sheet.tall, .sheet-backdrop.kb .sheet.page { height: 100%; }
+.sheet-backdrop.kb .sheet { padding-bottom: 0; }
