@@ -75,6 +75,31 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
     }
     return { b, s, e, doneMin, planMin, earned: earnings(doneMin, b), pay: nextPayday(today, b.payday) };
   });
+  // 날짜별 실제(DONE) 기록: 며칠에 몇 시간 했는지
+  const dayMap = new Map<string, Map<string, number>>();
+  for (const b of periodBlocks) {
+    if (b.kind !== 'done') continue;
+    const m = dayMap.get(b.date) ?? new Map<string, number>();
+    m.set(b.bundleId, (m.get(b.bundleId) ?? 0) + mins(b));
+    dayMap.set(b.date, m);
+  }
+  const dayRows = [...dayMap.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([date, m]) => {
+    const items = [...m.entries()].map(([id, min]) => ({ b: bundleMap.get(id), min })).filter((x): x is { b: Bundle; min: number } => !!x.b);
+    const total = items.reduce((t, x) => t + x.min, 0);
+    const money = items.reduce((t, x) => t + (x.b.income ? earnings(x.min, x.b) : 0), 0);
+    return { date, items, total, money };
+  });
+  const saveCsv = () => {
+    const rows = [['날짜', '요일', '묶음', '시간(분)', '시간', '수입(원)']];
+    for (const r of [...dayRows].reverse()) {
+      for (const x of r.items) rows.push([r.date, weekday(r.date), x.b.name, String(x.min), fmtMinutes(x.min), x.b.income ? String(earnings(x.min, x.b)) : '']);
+    }
+    const csv = '\ufeff' + rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `bisje-${from}_${to}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
   const earnedTotal = jobs.reduce((s, j) => s + j.earned, 0);
   const planMax = Math.max(1, ...jobs.map((j) => j.planMin));
   const [, m] = today.split('-').map(Number);
@@ -145,6 +170,28 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="card" aria-labelledby="day-title">
+          <div className="card-head">
+            <h3 className="card-title small-title" id="day-title">{period === 'week' ? '이번 주' : '이번 달'} 날짜별 기록</h3>
+            <span className="muted small">실제(DONE) 기준</span>
+          </div>
+          {dayRows.length === 0 && <Empty>아직 DONE 기록이 없어요.</Empty>}
+          {dayRows.map((r) => (
+            <div key={r.date} className="day-row">
+              <div className="day-head">
+                <strong>{short(r.date)} ({weekday(r.date)})</strong>
+                <span className="spacer" />
+                <strong>{fmtMinutes(r.total)}</strong>
+                {r.money > 0 && <span className="muted small"> · {won(r.money)}</span>}
+              </div>
+              <div className="muted small">{r.items.map((x) => `${x.b.name} ${fmtMinutes(x.min)}`).join(' · ')}</div>
+            </div>
+          ))}
+          {dayRows.length > 0 && (
+            <button type="button" className="btn outline wide" onClick={saveCsv}>엑셀(CSV) 파일로 저장</button>
+          )}
         </section>
 
         <section className="card" aria-labelledby="sum-title">

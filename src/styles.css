@@ -528,3 +528,7 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .btn-link { border: 0; background: none; font-size: 13px; text-decoration: underline; min-height: 44px; align-self: center; padding: 0 12px; }
 .danger-text { color: var(--sub); }
 .btn.danger-fill { background: #B3261E; color: #fff; border-color: #B3261E; }
+
+.day-row { padding: 10px 0; border-top: 1px solid #EFEFEB; display: flex; flex-direction: column; gap: 2px; }
+.day-row:first-of-type { border-top: 0; }
+.day-head { display: flex; align-items: baseline; gap: 4px; font-size: 15px; }
