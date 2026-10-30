@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
 import { alive, withDefaults } from './data';
 import type { SessionInfo } from './auth';
-import type { Block, Bundle, Category, Expense, ExpenseCategory, PaymentMethod, ScreenKey, Settings, Todo } from './types';
+import type { Block, Bundle, CalEvent, Category, Expense, ExpenseCategory, PaymentMethod, ScreenKey, Settings, Todo } from './types';
 import { logicalToday } from './time';
 
 export interface AppCtx {
@@ -94,4 +94,8 @@ export function useLocalPref<T>(key: string, init: T): [T, (v: T) => void] {
     }
   };
   return [v, set];
+}
+
+export function useEvents(): CalEvent[] {
+  return useLiveQuery(async () => alive(await db.events.toArray()), [], []);
 }

@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  Block, Bundle, Category, Expense, ExpenseCategory, PaymentMethod, Settings, Todo, Top3,
+  Block, Bundle, CalEvent, Category, Expense, ExpenseCategory, PaymentMethod, Settings, Todo, Top3,
 } from './types';
 
 export interface Meta {
@@ -14,6 +14,7 @@ class BisjeDB extends Dexie {
   todos!: Table<Todo, string>;
   top3!: Table<Top3, string>;
   blocks!: Table<Block, string>;
+  events!: Table<CalEvent, string>;
   expenses!: Table<Expense, string>;
   expenseCategories!: Table<ExpenseCategory, string>;
   paymentMethods!: Table<PaymentMethod, string>;
@@ -35,13 +36,15 @@ class BisjeDB extends Dexie {
       settings: 'id, dirty',
       meta: 'key',
     });
+    // 2: 캘린더 일정
+    this.version(2).stores({ events: 'id, start, dirty' });
   }
 }
 
 export const db = new BisjeDB();
 
 export const SYNC_TABLES = [
-  'categories', 'bundles', 'todos', 'top3', 'blocks',
+  'categories', 'bundles', 'todos', 'top3', 'blocks', 'events',
   'expenses', 'expenseCategories', 'paymentMethods', 'settings',
 ] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];

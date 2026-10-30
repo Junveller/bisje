@@ -11,7 +11,7 @@ import { Icon } from './components/Icon';
 import { ConfirmHost } from './components/confirm';
 import { AuthScreen, RecoveryNotice } from './screens/Auth';
 import { TodoScreen } from './screens/Todo';
-import { TimetableScreen } from './screens/Timetable';
+import { TimetableTab } from './screens/Timetable';
 import { LedgerScreen } from './screens/Ledger';
 import { StatsScreen } from './screens/Stats';
 import { SectionsScreen, SettingsScreen } from './screens/Settings';
@@ -103,7 +103,7 @@ function Shell({ session, setSession }: { session: SessionInfo; setSession: (s: 
         <div className="phone">
           <main className="phone-main">
             {current === 'todo' && <TodoScreen />}
-            {current === 'timetable' && <TimetableScreen />}
+            {current === 'timetable' && <TimetableTab />}
             {current === 'ledger' && <LedgerScreen />}
             {current === 'stats' && <StatsScreen />}
             {current === 'settings' && <SettingsScreen />}
@@ -144,7 +144,7 @@ function TabletLayout() {
       <AppTitle />
       <div className="tablet-cols">
         <section className="pane left" aria-label="할 일"><TodoScreen embedded /></section>
-        <section className="pane center" aria-label="시간표"><TimetableScreen embedded /></section>
+        <section className="pane center" aria-label="시간표"><TimetableTab embedded /></section>
         <section className="pane right" aria-label="오른쪽 패널">
           {hiding ? <SectionsScreen onDone={() => setHiding(false)} /> : (
             <>

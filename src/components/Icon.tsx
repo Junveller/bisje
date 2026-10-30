@@ -10,6 +10,7 @@ const paths: Record<string, string> = {
   left: 'M15 5l-7 7 7 7',
   right: 'M9 5l7 7-7 7',
   plus: 'M12 5v14M5 12h14',
+  flag: 'M6 3v18M6 4.5h11l-3 4 3 4H6',
   undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
   calendar: 'M7 4v3M17 4v3M5 7h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM4 11h16',
   pencil: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',

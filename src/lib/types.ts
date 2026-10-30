@@ -55,6 +55,21 @@ export interface Top3 extends Base {
   items: Top3Item[];
 }
 
+/** 캘린더 일정 (시간표 블록과 별개) */
+export interface CalEvent extends Base {
+  title: string;
+  /** 시작 날짜 yyyy-mm-dd */
+  start: string;
+  /** 끝 날짜 (포함). 하루짜리면 start와 같다 */
+  end: string;
+  allDay: boolean;
+  /** HH:MM (종일이 아닐 때) */
+  startTime?: string;
+  endTime?: string;
+  color: ColorKey;
+  memo?: string;
+}
+
 export type BlockKind = 'plan' | 'done';
 
 export interface Block extends Base {

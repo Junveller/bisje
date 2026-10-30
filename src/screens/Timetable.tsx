@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { AppTitle, Checkbox, DateCard, IconButton, Segmented, Sheet } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { aggregateBundleIds, copyPlanToDone, saveSettings } from '../lib/data';
@@ -7,6 +7,7 @@ import { colorOf } from '../lib/colors';
 import { addDays, fmtDateLong, fmtMinutes, hourOfRow, logicalToday, nowSlot, SLOTS, slotLabel, won, earnings } from '../lib/time';
 import type { Block, BlockKind } from '../lib/types';
 import { BlockSheet, type BlockDraft } from './BlockSheet';
+import { CalendarScreen } from './Calendar';
 
 const ROWS = 24;
 const ROW_H = 20;
@@ -46,7 +47,7 @@ function pieces(key: string, start: number, end: number): Piece[] {
   return out;
 }
 
-export function TimetableScreen({ embedded }: { embedded?: boolean }) {
+export function TimetableScreen({ embedded, switcher }: { embedded?: boolean; switcher?: ReactNode }) {
   const { settings, toast, tablet, date, setDate } = useApp();
   const now = useNow();
   const today = logicalToday(now);
@@ -227,6 +228,7 @@ export function TimetableScreen({ embedded }: { embedded?: boolean }) {
     <div className="screen">
       {!embedded && <AppTitle />}
       <div className="tt-toolbar">
+        {switcher}
         {!embedded && <DateCard date={date} today={today} onChange={setDate} addDays={addDays} />}
         <div className="tt-actions">
           <Segmented label="PLAN / DONE" value={kind} onChange={setKind}
@@ -367,4 +369,16 @@ export function AggregateSheet({ open, onClose, blocks }: { open: boolean; onClo
       </ul>
     </Sheet>
   );
+}
+
+/** 시간표 탭: 하루(시간표) / 월(캘린더) 전환 */
+export function TimetableTab({ embedded }: { embedded?: boolean }) {
+  const [view, setView] = useLocalPref<'day' | 'month'>('bisje.timeView', 'day');
+  const switcher = (
+    <Segmented label="하루 / 월" value={view} onChange={setView}
+      options={[{ value: 'day', label: '하루 (시간표)' }, { value: 'month', label: '월 (캘린더)' }]} />
+  );
+  return view === 'month'
+    ? <CalendarScreen embedded={embedded} switcher={switcher} />
+    : <TimetableScreen embedded={embedded} switcher={switcher} />;
 }
