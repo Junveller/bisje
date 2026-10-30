@@ -62,7 +62,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
   // 알바 수입 (현재 정산기간)
   const jobs = incomeBundles.filter(inFilter).map((b) => {
-    const [s, e] = settle.get(b.id)!;
+    const [s, e] = period === 'week' ? [from, to] : settle.get(b.id)!;
     const mine = blocks.filter((x) => x.bundleId === b.id && x.date >= s && x.date <= e);
     let doneMin = 0;
     let planMin = 0;
@@ -97,8 +97,8 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
         {jobs.length > 0 && (
           <>
-            <section className="hero" aria-label="알바로 지금까지 모인 돈">
-              <span className="hero-label">알바로 지금까지 모인 돈</span>
+            <section className="hero" aria-label={period === 'week' ? '알바로 이번 주에 번 돈' : '알바로 지금까지 모인 돈'}>
+              <span className="hero-label">{period === 'week' ? '알바로 이번 주에 번 돈' : '알바로 지금까지 모인 돈'}</span>
               <strong className="hero-value">{won(earnedTotal)}</strong>
               <span className="hero-label">{jobs.map((j) => `${j.b.name} ${short(j.pay.date)}`).join(' · ')} 지급 예정</span>
             </section>
@@ -114,7 +114,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
                     <strong className="job-amount">{won(j.earned)}</strong>
                   </div>
                   <span className="muted small">
-                    정산 {short(j.s)} ~ {short(j.e)} · 월급날 {j.b.payday >= LAST_DAY ? `말일(${short(j.pay.date)})` : short(j.pay.date)} · {j.pay.dday === 0 ? 'D-Day' : `D-${j.pay.dday}`}
+                    {period === 'week' ? '이번 주' : '정산'} {short(j.s)} ~ {short(j.e)} · 월급날 {j.b.payday >= LAST_DAY ? `말일(${short(j.pay.date)})` : short(j.pay.date)} · {j.pay.dday === 0 ? 'D-Day' : `D-${j.pay.dday}`}
                   </span>
                   <div className="stack-bar thin" role="img"
                     aria-label={`실제 ${fmtMinutes(j.doneMin)}, 계획 포함 ${fmtMinutes(j.planMin)}`}>
