@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppTitle, Checkbox, DateCard, Field, IconButton, Segmented, Sheet, isEnter } from '../components/ui';
 import { Icon } from '../components/Icon';
@@ -10,7 +10,7 @@ import { addDays, fmtMinutes, logicalToday, nowSlot, SLOTS, wageLabel } from '..
 import type { Bundle, Category, Todo, Top3, Top3Item } from '../lib/types';
 import { BundleEdit, CategoryEdit } from './BundleEdit';
 import { BlockSheet, type BlockDraft } from './BlockSheet';
-import { CompletedList, DueChip, DueSheet, DueSummary, sortByDue } from './TodoParts';
+import { CompletedList, DueChip, DueSheet, DueSummary } from './TodoParts';
 
 const MAX_PILLS = 12;
 
@@ -157,7 +157,45 @@ function BundleCard({ bundle, today, todos, onEdit, onSchedule, onEditTodo }: {
   const [text, setText] = useState('');
   const [pendingDue, setPendingDue] = useState<string | undefined>();
   const [dueOpen, setDueOpen] = useState(false);
-  const openTodos = sortByDue(todos.filter((t) => !t.done));
+  const baseOpen = todos.filter((t) => !t.done).sort((a, b) => a.order - b.order);
+  /** 끌어서 순서 바꾸는 중의 임시 순서 */
+  const [dragIds, setDragIds] = useState<string[] | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const openTodos = dragIds
+    ? dragIds.map((id) => baseOpen.find((t) => t.id === id)).filter((t): t is Todo => !!t)
+    : baseOpen;
+  const startDrag = (e: ReactPointerEvent, id: string) => {
+    e.preventDefault();
+    const handle = e.currentTarget as HTMLElement;
+    handle.setPointerCapture(e.pointerId);
+    let ids = baseOpen.map((t) => t.id);
+    setDragIds(ids);
+    const move = (ev: PointerEvent) => {
+      const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('li.todo[data-id]') ?? [])];
+      let target = rows.findIndex((r) => ev.clientY < r.getBoundingClientRect().top + r.getBoundingClientRect().height / 2);
+      if (target < 0) target = rows.length - 1;
+      const from = ids.indexOf(id);
+      if (target === from) return;
+      const next = ids.filter((x) => x !== id);
+      next.splice(target, 0, id);
+      ids = next;
+      setDragIds(next);
+    };
+    const end = async () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', end);
+      handle.removeEventListener('pointercancel', end);
+      const byId = new Map(baseOpen.map((t) => [t.id, t]));
+      for (let i = 0; i < ids.length; i++) {
+        const t = byId.get(ids[i]);
+        if (t && t.order !== i) await put<Todo>('todos', { ...t, order: i });
+      }
+      setDragIds(null);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  };
   const col = colorOf(bundle.color);
   const add = async () => {
     const title = text.trim();
@@ -177,13 +215,14 @@ function BundleCard({ bundle, today, todos, onEdit, onSchedule, onEditTodo }: {
           {bundle.income ? wageLabel(bundle) : `${openTodos.length}개 남음`}
         </span>
       </button>
-      <ul className="todo-list">
+      <ul className="todo-list" ref={listRef}>
         {openTodos.map((t) => (
-          <li key={t.id} className="todo">
+          <li key={t.id} data-id={t.id} className={'todo'}>
             <Checkbox checked={false} label={t.title} onChange={() => put<Todo>('todos', { ...t, done: true, doneOn: today })} />
             <button type="button" className="todo-title" onClick={() => onEditTodo(t)}>{t.title}</button>
             {t.memo && <span className="todo-memo" role="img" aria-label="메모 있음"><Icon name="memo" size={14} /></span>}
             {t.due && <DueChip due={t.due} today={today} />}
+            <span className="todo-grip" role="button" aria-label={`${t.title} 순서 바꾸기 (끌어서 이동)`} onPointerDown={(e) => startDrag(e, t.id)}><Icon name="grip" size={18} stroke={3} /></span>
             <IconButton icon="clock" className="accent-text" label={`${t.title} 시간표에 추가`} onClick={() => onSchedule(t)} />
           </li>
         ))}
