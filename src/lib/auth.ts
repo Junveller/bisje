@@ -221,6 +221,23 @@ export async function regenerateRecoveryCode(): Promise<string> {
   return code;
 }
 
+/** 계정 탈퇴: 비밀번호 확인 후 서버(또는 이 브라우저)의 계정과 모든 기록을 지운다 */
+export async function deleteAccount(pin: string) {
+  if (!isPin(pin)) throw new AuthError('pin');
+  if (remoteMode) {
+    await flushSync().catch(() => undefined);
+    await rpc('bisje_delete_account', { p_token: await token(), p_pin: pin });
+  } else {
+    const acc = await loadAccount();
+    if (!acc) throw new AuthError('session');
+    await localVerify(acc.nickname, async (a) => (await kdf(pin, a.salt)) === a.pinHash);
+    const st = getArtifactStore();
+    if (st) await st.account.delete?.().catch(() => undefined);
+  }
+  await clearLocalData();
+  resetSyncState();
+}
+
 export async function signOut() {
   if (remoteMode) {
     await flushSync().catch(() => undefined);

@@ -206,6 +206,24 @@ begin
   return jsonb_build_object('recoveryCode', v_code);
 end $$;
 
+-- 계정 탈퇴: 비밀번호를 한 번 더 확인하고 계정·기록·로그인을 모두 삭제한다
+create or replace function public.bisje_delete_account(p_token text, p_pin text) returns jsonb
+language plpgsql volatile security definer set search_path = public, extensions as $$
+declare
+  v_id uuid := bisje_account_for(p_token);
+  v_nick text;
+  r jsonb;
+begin
+  if coalesce(p_pin, '') !~ '^[0-9]{4}$' then
+    return jsonb_build_object('error', 'pin');
+  end if;
+  select nickname into v_nick from bisje_accounts where id = v_id;
+  r := bisje_verify(v_nick, p_pin, false);
+  if r ? 'error' then return r; end if;
+  delete from bisje_accounts where id = v_id; -- 세션·기록은 cascade로 함께 삭제
+  return jsonb_build_object('ok', true);
+end $$;
+
 create or replace function public.bisje_logout(p_token text) returns void
 language sql volatile security definer set search_path = public, extensions as $$
   delete from bisje_sessions where token_hash = encode(digest(coalesce(p_token, ''), 'sha256'), 'hex')
@@ -247,6 +265,7 @@ grant execute on function
   public.bisje_set_pin(text, text),
   public.bisje_regen_recovery(text),
   public.bisje_logout(text),
+  public.bisje_delete_account(text, text),
   public.bisje_push(text, jsonb),
   public.bisje_pull(text, timestamptz)
 to anon, authenticated;

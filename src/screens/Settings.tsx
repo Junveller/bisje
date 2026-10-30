@@ -4,7 +4,7 @@ import { saveSettings } from '../lib/data';
 import { askConfirm } from '../components/confirm';
 import { useApp } from '../lib/hooks';
 import {
-  authErrorMessage, regenerateRecoveryCode, setPin, signOut, storageMode, syncedMode,
+  authErrorMessage, deleteAccount, regenerateRecoveryCode, setPin, signOut, storageMode, syncedMode,
 } from '../lib/auth';
 import { getSyncStatus, onSyncStatus, syncNow, type SyncStatus } from '../lib/sync';
 import { artifactBuild } from '../lib/artifactStore';
@@ -113,6 +113,7 @@ export function SettingsScreen({ embedded }: { embedded?: boolean }) {
   const [sync, setSync] = useState(getSyncStatus());
   const [pinOpen, setPinOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
+  const [delOpen, setDelOpen] = useState(false);
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone;
 
   useEffect(() => {
@@ -167,13 +168,41 @@ export function SettingsScreen({ embedded }: { embedded?: boolean }) {
         </div>
 
         <button type="button" className="btn outline danger wide" onClick={logout}>로그아웃</button>
+        <button type="button" className="btn-link danger-text" onClick={() => setDelOpen(true)}>계정 탈퇴</button>
         <p className="muted small center">Bisje · 변경 사항은 자동으로 저장돼요</p>
       </div>
 
+      <DeleteSheet open={delOpen} onClose={() => setDelOpen(false)} onDone={() => setSession(undefined)} />
       <PinSheet open={pinOpen} onClose={() => setPinOpen(false)} />
       <RecoveryCodeSheet open={codeOpen} onClose={() => setCodeOpen(false)} code={session.recoveryCode}
         onRegenerated={(recoveryCode) => setSession({ ...session, recoveryCode })} />
     </div>
+  );
+}
+
+function DeleteSheet({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const { toast } = useApp();
+  const [pin, setPin] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setPin(''); }, [open]);
+  const go = async () => {
+    setBusy(true);
+    try {
+      await deleteAccount(pin);
+      onClose();
+      onDone();
+    } catch (e) {
+      toast(authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Sheet open={open} onClose={onClose} title="계정 탈퇴"
+      footer={<button type="button" className="btn danger-fill big grow" disabled={!isPin(pin) || busy} onClick={go}>탈퇴하고 모든 데이터 삭제</button>}>
+      <p className="small">탈퇴하면 계정과 모든 기록(할 일, 시간표, 일정, 가계부 등)이 서버와 이 기기에서 <b>완전히 삭제되고 되돌릴 수 없어요.</b> 다른 기기에서도 로그인할 수 없게 돼요.</p>
+      <Field label="비밀번호 확인 (숫자 4자리)"><PinInput value={pin} onChange={setPin} autoFocus /></Field>
+    </Sheet>
   );
 }
 
