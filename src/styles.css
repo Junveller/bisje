@@ -464,6 +464,7 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .done-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px 0 14px; border-top: 1px solid #EFEFEB; }
 .done-row:first-child { border-top: 0; }
 .done-check { flex: none; width: 20px; height: 20px; border-radius: 6px; background: #5CC7A0; color: #fff; display: flex; align-items: center; justify-content: center; }
+.done-open { border: 0; background: none; text-align: left; align-items: flex-start; }
 .done-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 6px 0; }
 .done-title { font-size: 14.5px; color: #3A3A44; overflow-wrap: anywhere; }
 .done-date { flex: none; font-size: 12px; font-weight: 700; color: #1F7A57; text-align: right; }

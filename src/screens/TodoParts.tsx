@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Field, Sheet } from '../components/ui';
 import { Icon } from '../components/Icon';
-import { put } from '../lib/data';
+import { askConfirm } from '../components/confirm';
+import { put, remove } from '../lib/data';
 import { colorOf } from '../lib/colors';
 import { addDays, fmtDateShort, logicalToday, parseYmd, ymd } from '../lib/time';
 import type { Bundle, Category, Todo } from '../lib/types';
@@ -97,6 +98,7 @@ export function CompletedList({ todos, bundles, categories, today }: {
   const [cat, setCat] = useState<string>('all');
   const [recent, setRecent] = useState(false);
   const [day, setDay] = useState('');
+  const [editing, setEditing] = useState<Todo | null>(null);
   const doneOf = (t: Todo) => t.doneOn ?? logicalToday(new Date(t.updatedAt || Date.now()));
   const done = todos.filter((t) => t.done);
   const bundleMap = new Map(bundles.map((b) => [b.id, b]));
@@ -151,10 +153,10 @@ export function CompletedList({ todos, bundles, categories, today }: {
             {items.map((t) => (
               <li key={t.id} className="done-row">
                 <span className="done-check"><Icon name="check" size={14} stroke={3} /></span>
-                <div className="done-main">
+                <button type="button" className="done-main done-open" aria-label={`${t.title} 완료 기록 편집`} onClick={() => setEditing(t)}>
                   <span className="done-title">{t.title}</span>
                   {note(t) && <span className="muted xsmall">{note(t)}</span>}
-                </div>
+                </button>
                 <span className="done-date">{doneOf(t) === today ? `${md(doneOf(t))} (오늘)` : fmtDateShort(doneOf(t)).replace(' ', ' (') + ')'} 완료</span>
                 <button type="button" className="icon-btn faint" aria-label={`${t.title} 진행 중으로 되돌리기`} title="진행 중으로 되돌리기"
                   onClick={() => restore(t)}><Icon name="undo" size={18} /></button>
@@ -163,7 +165,43 @@ export function CompletedList({ todos, bundles, categories, today }: {
           </ul>
         </section>
       ))}
+      <DoneEdit todo={editing} doneOn={editing ? doneOf(editing) : ''} today={today} onClose={() => setEditing(null)} />
     </>
+  );
+}
+
+/** 완료한 할 일: 완료 날짜 고치기 · 완전히 지우기 */
+function DoneEdit({ todo, doneOn, today, onClose }: { todo: Todo | null; doneOn: string; today: string; onClose: () => void }) {
+  const [date, setDate] = useState('');
+  useEffect(() => setDate(doneOn), [doneOn, todo]);
+  if (!todo) return null;
+  const del = async () => {
+    if (!(await askConfirm(`‘${todo.title}’을(를) 완전히 지울까요? 되돌릴 수 없어요.`, { okLabel: '지우기', danger: true }))) return;
+    await remove('todos', todo.id);
+    onClose();
+  };
+  const save = async () => {
+    if (!date) return;
+    await put<Todo>('todos', { ...todo, doneOn: date });
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title="완료 기록"
+      footer={
+        <>
+          <button type="button" className="btn outline danger big del-btn" onClick={del}>지우기</button>
+          <button type="button" className="btn primary big grow" disabled={!date} onClick={save}>저장</button>
+        </>
+      }>
+      <p className="muted small">{todo.title}</p>
+      <Field label="완료한 날짜">
+        <input type="date" className="input" value={date} max={today} aria-label="완료한 날짜" onChange={(e) => setDate(e.target.value)} />
+      </Field>
+      <div className="chips">
+        <button type="button" className={'chip lg' + (date === today ? ' on' : '')} onClick={() => setDate(today)}>오늘</button>
+        <button type="button" className={'chip lg' + (date === addDays(today, -1) ? ' on' : '')} onClick={() => setDate(addDays(today, -1))}>어제</button>
+      </div>
+    </Sheet>
   );
 }
 
