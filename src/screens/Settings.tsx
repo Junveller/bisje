@@ -64,7 +64,7 @@ function NameField() {
   };
   return (
     <Field label="닉네임" hint={`화면 맨 위에 “${name.trim() || settings.displayName}의 비서”로 보여요. 로그인 닉네임은 ${session.nickname}이에요.`}>
-      <input className="input" lang="ko" value={name} maxLength={20} placeholder="예: 준혁" autoComplete="nickname"
+      <input className="input" lang="ko" value={name} maxLength={20} placeholder="예: 마이데이" autoComplete="nickname"
         autoCorrect="off" spellCheck={false} onChange={(e) => setName(e.target.value)} onBlur={save}
         onKeyDown={(e) => isEnter(e) && (e.target as HTMLInputElement).blur()} />
     </Field>

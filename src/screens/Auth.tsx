@@ -86,7 +86,7 @@ export function AuthScreen({ onAuthed }: { onAuthed: (s: SessionInfo, isNew: boo
 
         <form className="card list" onSubmit={submit}>
           <Field label="닉네임" hint={mode === 'signup' ? '한글, 영문, 숫자 모두 돼요 (1~20자). 로그인 ID로 쓰여서 다른 사람과 겹칠 수 없어요.' : undefined}>
-            <input className="input" name="nickname" lang="ko" value={nickname} maxLength={20} placeholder="예: 준혁"
+            <input className="input" name="nickname" lang="ko" value={nickname} maxLength={20} placeholder="예: 마이데이"
               autoComplete="nickname" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next"
               onChange={(e) => setNickname(e.target.value)} autoFocus />
           </Field>
