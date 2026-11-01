@@ -532,3 +532,11 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .day-row { padding: 10px 0; border-top: 1px solid #EFEFEB; display: flex; flex-direction: column; gap: 2px; }
 .day-row:first-of-type { border-top: 0; }
 .day-head { display: flex; align-items: baseline; gap: 4px; font-size: 15px; }
+
+.pick-label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 96px; min-height: 44px; padding: 0 6px; border-radius: 12px; }
+.pick-text { font-size: 16px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.pick-text:after { content: '▾'; font-size: 11px; color: var(--sub); }
+.pick-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.pick-input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.nav-row { display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 44px; }
+.nav-row .back-now { margin-left: 4px; border: 0; background: var(--accent-soft, #EEF0FF); color: var(--accent-text); font-size: 12px; font-weight: 700; border-radius: 14px; padding: 0 12px; min-height: 32px; }

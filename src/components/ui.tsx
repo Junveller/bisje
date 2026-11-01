@@ -244,3 +244,16 @@ export function Stepper({ label, value, onDec, onInc, decLabel, incLabel }: {
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
 }
+
+/** 월/날짜 라벨. 누르면 달력(월 선택)이 열려 원하는 달로 바로 이동한다 */
+export function PickLabel({ text, type, value, onChange, label }: {
+  text: string; type: 'month' | 'date'; value: string; onChange: (v: string) => void; label: string;
+}) {
+  return (
+    <span className="pick-label">
+      <span className="pick-text" aria-hidden="true">{text}</span>
+      <input type={type} className="pick-input" aria-label={label} value={value}
+        onChange={(e) => e.target.value && onChange(e.target.value)} />
+    </span>
+  );
+}

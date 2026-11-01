@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppTitle, Empty, Field, IconButton, ScreenHeading, Sheet, isEnter } from '../components/ui';
+import { AppTitle, Empty, Field, IconButton, PickLabel, ScreenHeading, Sheet, isEnter } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { put, remove, saveSettings, uid } from '../lib/data';
 import { useApp, useExpenseCategories, useExpensesBetween, useLocalPref, usePaymentMethods } from '../lib/hooks';
@@ -29,7 +29,9 @@ export function LedgerScreen({ embedded }: { embedded?: boolean }) {
   const uncategorized = list.filter((e) => !cats.some((c) => c.id === e.categoryId)).reduce((s, e) => s + e.amount, 0);
   const byMethod = methods.map((pm) => ({ pm, amount: list.filter((e) => e.methodId === pm.id).reduce((s, e) => s + e.amount, 0) }));
   const days = [...new Set(filtered.map((e) => e.date))].sort().reverse();
-  const [, mo] = month.split('-').map(Number);
+  const [yr, mo] = month.split('-').map(Number);
+  const isNow = month === ymd(new Date()).slice(0, 7);
+  const mLabel = isNow ? '이번 달' : `${mo}월`;
 
   return (
     <div className="screen">
@@ -38,7 +40,7 @@ export function LedgerScreen({ embedded }: { embedded?: boolean }) {
         <ScreenHeading right={
           <>
             <IconButton icon="left" label="지난달" onClick={() => { setMonth(addMonths(month, -1)); setSearch(null); }} />
-            <span className="month-label">{mo}월</span>
+            <PickLabel text={`${yr}년 ${mo}월`} type="month" value={month} label="월 선택" onChange={(v) => { setMonth(v); setSearch(null); }} />
             <IconButton icon="right" label="다음달" onClick={() => { setMonth(addMonths(month, 1)); setSearch(null); }} />
             <button type="button" className="fab" aria-label="지출 추가" onClick={() => setEdit({ date: search ?? ymd(new Date()) })}>
               <span><Icon name="plus" size={20} stroke={2.4} /></span>
@@ -46,8 +48,8 @@ export function LedgerScreen({ embedded }: { embedded?: boolean }) {
           </>
         }>{embedded ? '' : '가계부'}</ScreenHeading>
 
-        <section className="card" aria-label="이번 달 지출">
-          <span className="muted small">이번 달 지출</span>
+        <section className="card" aria-label={`${mLabel} 지출`}>
+          <span className="muted small">{mLabel} 지출</span>
           <div className="total-line">
             <strong className="money">{won(total)}</strong>
             {settings.budget > 0 && <span className="budget">/ {won(settings.budget)}</span>}
@@ -109,7 +111,7 @@ export function LedgerScreen({ embedded }: { embedded?: boolean }) {
           </div>
         )}
 
-        {days.length === 0 && <Empty>{search ? '이 날짜의 지출이 없어요.' : '이번 달 지출이 아직 없어요. + 를 눌러 추가해 보세요.'}</Empty>}
+        {days.length === 0 && <Empty>{search ? '이 날짜의 지출이 없어요.' : `${mLabel} 지출이 아직 없어요. + 를 눌러 추가해 보세요.`}</Empty>}
         {days.map((d) => {
           const items = filtered.filter((e) => e.date === d).sort((a, b) => b.updatedAt - a.updatedAt);
           const dayTotal = items.reduce((s, e) => s + e.amount, 0);

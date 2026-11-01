@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { AppTitle, Empty, ScreenHeading, Segmented } from '../components/ui';
+import { AppTitle, Empty, IconButton, PickLabel, ScreenHeading, Segmented } from '../components/ui';
 import { useBlocksBetween, useBundles, useCategories, useToday } from '../lib/hooks';
 import { colorOf } from '../lib/colors';
 import {
-  addDays, fmtMinutes, monthRange, nextPayday, parseYmd, settlementRange, weekday, weekRange, won,
+  addDays, addMonths, fmtMinutes, monthRange, nextPayday, parseYmd, settlementRange, weekday, weekRange, won,
   earnings, wageLabel,
 } from '../lib/time';
 import type { Block, Bundle } from '../lib/types';
@@ -21,9 +21,16 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
   const categories = useCategories();
   const bundles = useBundles();
 
-  const [from, to] = period === 'week' ? weekRange(today) : monthRange(today);
+  /** 보고 있는 기준 날짜 (없으면 오늘) — 지난 주/달로 이동할 수 있다 */
+  const [anchor, setAnchor] = useState<string | undefined>();
+  const ref = anchor ?? today;
+  const [from, to] = period === 'week' ? weekRange(ref) : monthRange(ref);
+  const isCurrent = today >= from && today <= to;
+  const [ry, rm] = ref.split('-').map(Number);
+  const shift = (n: number) => setAnchor(period === 'week' ? addDays(from, 7 * n) : `${addMonths(ref.slice(0, 7), n)}-01`);
+  const pLabel = period === 'week' ? (isCurrent ? '이번 주' : `${short(from)}~${short(to)}`) : (isCurrent ? '이번 달' : `${rm}월`);
   const incomeBundles = bundles.filter((b) => b.income);
-  const settle = new Map(incomeBundles.map((b) => [b.id, settlementRange(today, Math.min(28, Math.max(1, b.settleStart || 1)))]));
+  const settle = new Map(incomeBundles.map((b) => [b.id, settlementRange(ref, Math.min(28, Math.max(1, b.settleStart || 1)))]));
   let qFrom = from;
   let qTo = to;
   for (const [s, e] of settle.values()) {
@@ -100,17 +107,26 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
     a.href = url; a.download = `bisje-${from}_${to}.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
+  const heroLabel = period === 'week' ? `알바로 ${pLabel}에 번 돈` : isCurrent ? '알바로 지금까지 모인 돈' : `알바로 ${rm}월 정산 기간에 번 돈`;
   const earnedTotal = jobs.reduce((s, j) => s + j.earned, 0);
   const planMax = Math.max(1, ...jobs.map((j) => j.planMin));
-  const [, m] = today.split('-').map(Number);
+  const m = rm;
 
   return (
     <div className="screen">
       {!embedded && <AppTitle />}
       <div className="screen-body">
         {!embedded && <ScreenHeading>통계</ScreenHeading>}
-        <Segmented label="기간" value={period} onChange={setPeriod}
+        <Segmented label="기간" value={period} onChange={(v) => { setPeriod(v); }}
           options={[{ value: 'week', label: '이번 주' }, { value: 'month', label: '이번 달' }]} />
+        <div className="nav-row">
+          <IconButton icon="left" label={period === 'week' ? '지난 주' : '지난달'} onClick={() => shift(-1)} />
+          {period === 'week'
+            ? <PickLabel text={`${short(from)} ~ ${short(to)}`} type="date" value={ref} label="주 선택 (그 주로 이동)" onChange={(v) => setAnchor(v)} />
+            : <PickLabel text={`${ry}년 ${rm}월`} type="month" value={ref.slice(0, 7)} label="월 선택" onChange={(v) => setAnchor(`${v}-01`)} />}
+          <IconButton icon="right" label={period === 'week' ? '다음 주' : '다음달'} onClick={() => shift(1)} />
+          {!isCurrent && <button type="button" className="back-now" onClick={() => setAnchor(undefined)}>{period === 'week' ? '이번 주' : '이번 달'}로</button>}
+        </div>
         <div className="chips scroll" role="group" aria-label="카테고리 필터">
           <button type="button" className={'chip lg' + (catFilter === 'all' ? ' on' : '')} aria-pressed={catFilter === 'all'}
             onClick={() => setCatFilter('all')}>전체</button>
@@ -122,10 +138,10 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
         {jobs.length > 0 && (
           <>
-            <section className="hero" aria-label={period === 'week' ? '알바로 이번 주에 번 돈' : '알바로 지금까지 모인 돈'}>
-              <span className="hero-label">{period === 'week' ? '알바로 이번 주에 번 돈' : '알바로 지금까지 모인 돈'}</span>
+            <section className="hero" aria-label={heroLabel}>
+              <span className="hero-label">{heroLabel}</span>
               <strong className="hero-value">{won(earnedTotal)}</strong>
-              <span className="hero-label">{jobs.map((j) => `${j.b.name} ${short(j.pay.date)}`).join(' · ')} 지급 예정</span>
+              {isCurrent && <span className="hero-label">{jobs.map((j) => `${j.b.name} ${short(j.pay.date)}`).join(' · ')} 지급 예정</span>}
             </section>
             {jobs.map((j) => {
               const c = colorOf(j.b.color);
@@ -139,7 +155,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
                     <strong className="job-amount">{won(j.earned)}</strong>
                   </div>
                   <span className="muted small">
-                    {period === 'week' ? '이번 주' : '정산'} {short(j.s)} ~ {short(j.e)} · 월급날 {j.b.payday >= LAST_DAY ? `말일(${short(j.pay.date)})` : short(j.pay.date)} · {j.pay.dday === 0 ? 'D-Day' : `D-${j.pay.dday}`}
+                    {period === 'week' ? pLabel : '정산'} {short(j.s)} ~ {short(j.e)} · 월급날 {j.b.payday >= LAST_DAY ? `말일(${short(j.pay.date)})` : short(j.pay.date)} · {j.pay.dday === 0 ? 'D-Day' : `D-${j.pay.dday}`}
                   </span>
                   <div className="stack-bar thin" role="img"
                     aria-label={`실제 ${fmtMinutes(j.doneMin)}, 계획 포함 ${fmtMinutes(j.planMin)}`}>
@@ -158,7 +174,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
         <section className="card" aria-labelledby="bar-title">
           <div className="card-head">
-            <h3 className="card-title small-title" id="bar-title">{period === 'week' ? '이번 주 요일별 근무시간' : `${m}월 주별 근무시간`}</h3>
+            <h3 className="card-title small-title" id="bar-title">{period === 'week' ? `${pLabel} 요일별 근무시간` : `${m}월 주별 근무시간`}</h3>
             <span className="muted small">총 {fmtMinutes(barTotal)}</span>
           </div>
           <div className="vbars" role="img" aria-label={bars.map((b) => `${b.label} ${fmtMinutes(b.done)}`).join(', ')}>
@@ -174,7 +190,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
         <section className="card" aria-labelledby="day-title">
           <div className="card-head">
-            <h3 className="card-title small-title" id="day-title">{period === 'week' ? '이번 주' : '이번 달'} 날짜별 기록</h3>
+            <h3 className="card-title small-title" id="day-title">{pLabel} 날짜별 기록</h3>
             <span className="muted small">실제(DONE) 기준</span>
           </div>
           {dayRows.length === 0 && <Empty>아직 DONE 기록이 없어요.</Empty>}
@@ -196,7 +212,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
         <section className="card" aria-labelledby="sum-title">
           <div className="card-head">
-            <h3 className="card-title small-title" id="sum-title">{period === 'week' ? '이번 주' : '이번 달'} 묶음별 시간</h3>
+            <h3 className="card-title small-title" id="sum-title">{pLabel} 묶음별 시간</h3>
             <span className="muted small">실제 / 계획</span>
           </div>
           {totals.size === 0 && <Empty>아직 기록이 없어요. 시간표에서 DONE을 칠해 보세요.</Empty>}
