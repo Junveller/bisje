@@ -41,7 +41,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
 
   const inFilter = (b: Bundle | undefined) => !!b && (catFilter === 'all' || b.categoryId === catFilter);
   const bundleMap = useMemo(() => new Map(bundles.map((b) => [b.id, b])), [bundles]);
-  const periodBlocks = blocks.filter((b) => b.date >= from && b.date <= to && inFilter(bundleMap.get(b.bundleId)));
+  const periodBlocks = blocks.filter((b) => b.date >= from && b.date <= to && (b.bundleId ? inFilter(bundleMap.get(b.bundleId)) : catFilter === 'all'));
 
   // 묶음별 합계 (DONE / PLAN)
   const totals = new Map<string, { done: number; plan: number }>();
@@ -91,7 +91,7 @@ export function StatsScreen({ embedded }: { embedded?: boolean }) {
     dayMap.set(b.date, m);
   }
   const dayRows = [...dayMap.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([date, m]) => {
-    const items = [...m.entries()].map(([id, min]) => ({ b: bundleMap.get(id), min })).filter((x): x is { b: Bundle; min: number } => !!x.b);
+    const items = [...m.entries()].map(([id, min]) => ({ b: bundleMap.get(id) ?? ({ id: '', name: '분류 없음', income: false } as unknown as Bundle), min }));
     const total = items.reduce((t, x) => t + x.min, 0);
     const money = items.reduce((t, x) => t + (x.b.income ? earnings(x.min, x.b) : 0), 0);
     return { date, items, total, money };

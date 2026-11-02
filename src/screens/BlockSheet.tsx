@@ -34,10 +34,6 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
     setEditTime(false);
   }, [draft]);
 
-  useEffect(() => {
-    if (d && !d.bundleId && bundles.length && !d.id) setD({ ...d, bundleId: bundles[0].id });
-  }, [bundles, d]);
-
   if (!d) return null;
   const editing = !!d.id;
   const bundle = bundles.find((b) => b.id === d.bundleId);
@@ -46,7 +42,8 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
   const autoTitle = (bundleId?: string, todoId?: string) =>
     todos.find((t) => t.id === todoId)?.title ?? bundles.find((b) => b.id === bundleId)?.name ?? '';
   const title = titleTouched ? d.title ?? '' : d.title || autoTitle(d.bundleId, d.todoId);
-  const finalTitle = title.trim() || autoTitle(d.bundleId, d.todoId);
+  /** 묶음을 고르지 않아도 저장할 수 있다 (제목도 비우면 ‘기록’) */
+  const finalTitle = title.trim() || autoTitle(d.bundleId, d.todoId) || '기록';
 
   const setStart = (s: number) => {
     const start = Math.max(0, Math.min(SLOTS - 1, s));
@@ -59,14 +56,10 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
 
   const toBlock = (): Omit<Block, 'updatedAt'> => ({
     id: d.id ?? uid(), date: d.date, kind: d.kind, start: d.start, end: d.end,
-    bundleId: d.bundleId!, todoId: d.todoId, title: finalTitle, memo: d.memo ?? '',
+    bundleId: d.bundleId ?? '', todoId: d.todoId, title: finalTitle, memo: d.memo ?? '',
   });
 
   const save = async () => {
-    if (!d.bundleId) {
-      toast('묶음을 먼저 만들어 주세요');
-      return;
-    }
     await placeBlock(toBlock());
     onClose();
   };
@@ -99,8 +92,13 @@ export function BlockSheet({ draft, onClose }: { draft: BlockDraft | null; onClo
       </Field>
 
       <div className="field">
-        <span className="field-label">묶음</span>
-        {bundles.length === 0 && <p className="muted">할 일 화면에서 묶음을 먼저 만들어 주세요.</p>}
+        <span className="field-label">묶음 (선택)</span>
+        <div className="chips">
+          <button type="button" className={'chip' + (!d.bundleId ? ' on' : '')} aria-pressed={!d.bundleId}
+            onClick={() => setD({ ...d, bundleId: undefined, todoId: undefined })}>
+            <span className="dot" style={{ background: colorOf(undefined).strong }} />선택 안 함
+          </button>
+        </div>
         {categories.map((c) => {
           const bs = bundles.filter((b) => b.categoryId === c.id);
           if (!bs.length) return null;
